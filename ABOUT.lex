@@ -52,19 +52,60 @@ The interface has:
   - When open, the settings panel, the same home button is present so that the learned skill to reset is reused. The config has to have a "reset config" button so that exploratory children changtes can be usually reverted to a familar state.
 
 
-  Stack: 
-    - Written in Typescript.
-    - React or other component base framework / layout.
-    - CSS Based, with a sensible starting point.
+  Stack:
+    - **Language**: TypeScript
+    - **Framework**: React (using Vite for build/dev)
+    - **Mobile Runtime**: Capacitor (compiles web app to Native iOS/Android)
+    - **State Management**: Zustand (lightweight global store)
+    - **Storage**: localforage (abstraction over IndexedDB/Native Storage)
+    - **Styling**: Standard CSS / CSS Modules (no heavy UI libraries)
+
+  Text to Speech (TTS) Strategy:
+    - **Primary Engine**: @capacitor-community/text-to-speech.
+      - Leverages the device's native OS TTS (Siri/AVSpeechSynthesizer on iOS, Google Speech on Android).
+      - Zero download size, works offline, native performance.
+    - **Consistency Option**: Piper TTS (WASM).
+      - Optional download (~10MB WASM + ~20MB Voice Model) for users demanding specific cross-platform voice consistency.
+      - Allows granular control over pitch/speed if OS voices are insufficient.
 
 
-  Because the UI requiements are really simple (aside the settings panel, we will have large buttons and a home button), we can and should opt for simpler and preferably performant libs. Keeping the app responsive on old and less capable handsets is a big one for the public audience. 
+The Data Model
 
+  The engine will load the application definition from YAML files. This format is chosen to be effectively "no-code" for configuration, allowing parents, therapists, and non-technical users to experiment and customize the app without rebuilding.
 
-The Big Unkown
+  Configuration Files:
+    - `application.yaml`: Defines global UI/UX parameters (colors, default voice settings, behavior).
+    - `lexicon.yaml`: Defines the core phrase tree and vocabulary.
+    - `translations.yaml`: Defines the map of keys to localized strings.
 
-  The one thing that is eaier to define is the text to speech engire. The ideal requirements are: 
-    - Free to use across platforms.
-    - Multi Lingual.
-    - Small download size. (it's okay to ship with the user's OS language and load others on demand.)
-    - Reasonable selection of voices. Autistic children can be very sensite to tone, pitch and entonation, and allowing parents to change from a few options can be useful.
+  Data Model Structure (`lexicon.yaml`):
+
+  ```yaml
+  phrases:
+    hungry:                # Key used for i18n lookup
+      icon: hungry.svg     # Path to vector asset
+      bg_color: "#FF5733"  # Optional override
+      children: 
+        apple: 
+          icon: apple.svg 
+          full_sentence: "request_apple_sentence" # i18n key for the full sentence
+  ```
+
+  Translation Model (`translations.yaml`):
+  
+  ```yaml
+  en:
+    hungry: "I am hungry"
+    apple: "Apple"
+    request_apple_sentence: "I would like to eat an apple"
+  es:
+    hungry: "Tengo hambre"
+    apple: "Manzana"
+    request_apple_sentence: "Quiero comer una manzana"
+  ```
+  
+  Logic:
+  - **Navigation**: The app starts at the root of `phrases`. Selecting a node with `children` descends into that category.
+  - **Leaf Nodes**: Selecting a node without `children` triggers the "Speak" action.
+  - **Display**: The label shown ensures the node's key (e.g., `apple`) is looked up in `translations.yaml` for the current locale. If missing, it falls back to the key itself or a `default_label` if provided.
+  - **Speech**: When a leaf is selected, the engine looks up the `full_sentence` key. If found, that specific phrase is spoken. If `full_sentence` is omitted, the engine constructs a sentence by concatenating the path (e.g., "Hungry Apple"), though this is discouraged for learning purposes.
