@@ -1,0 +1,21 @@
+phrases:
+  hungry:
+    icon: 😋
+    bg_color: "#FFB74D"
+    children:
+      apple:
+        icon: 🍎
+        full_sentence: request_apple
+      banana:
+        icon: 🍌
+        full_sentence: request_banana
+  thirsty:
+    icon: 🥤
+    bg_color: "#4FC3F7"
+    children:
+      water:
+        icon: 💧
+        full_sentence: request_water
+      juice:
+        icon: 🧃
+        full_sentence: request_juice
